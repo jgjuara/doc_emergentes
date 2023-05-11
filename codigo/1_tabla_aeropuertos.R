@@ -2,6 +2,18 @@ library(tidyverse)
 library(arrow)
 library(comunicacion)
 
+#...............................................................................
+#                                                                              .
+#  Script de preprocesamiento de aeropuertos:                                  .
+#                                                                              .
+#    para cada aeropuerto toma el max mensual de vuelos y pax para 2019        .
+#                                                                              .
+#    se le agregan las coordenadas de los aeropuertos                          .
+#                                                                              .
+#...............................................................................
+
+
+
 base_total <- herramientas::read_file_srv("aerocomercial/anac/base_anac_agrupada_diaria.parquet")
 
 base_total <- base_total %>%

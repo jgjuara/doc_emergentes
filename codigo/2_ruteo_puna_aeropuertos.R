@@ -6,6 +6,18 @@ library(arrow)
 library(osrm)
 
 
+#...............................................................................
+#                                                                              .
+#  Asigno top 3 aeropuertos mas cercanos a cada localidad georeferenciada de   .
+#  puna                                                                        .
+#                                                                              .
+#  Se usan distancias lineales y dps se toman distancias y tiempo de viaje     .
+#  con osrm                                                                    .
+#                                                                              .
+#...............................................................................
+
+
+
 puna <- herramientas::read_file_srv("/srv/DataDNMYE/capas_sig/puna_localidades_bahra.gpkg")
 
 puna <- puna %>%
