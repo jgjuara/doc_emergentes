@@ -25,7 +25,7 @@ puna <- puna %>%
 
 # aeropuertos <- herramientas::read_file_srv("/srv/DataDNMYE/capas_sig/aeropuertos_anac_total.gpkg")
 
-source("codigo/tabla_aeropuertos.R")
+source("codigo/1_tabla_aeropuertos.R")
 
 aeropuertos <- aeropuertos %>%
   mutate(indice = 1:n())
@@ -58,14 +58,13 @@ ruteo <- function(x,y) {
   )
 }
 
-puna_aeropuertos_osrm <- list()
 j <- 1
 
 for (i in j:nrow(puna_aeropuertos)) {
-  
-  puna_aeropuertos_osrm[i] <- puna_aeropuertos[i,] %>% 
+
+  puna_aeropuertos[i,] %>% 
     mutate(osrm = ruteo(geom, geometry)) %>% 
-    list()
+    write_rds(.,file = glue::glue("entradas/ruteos/puna_aeropuertos_osrm_{i}.rds"))
   
   
   print(i)
@@ -73,6 +72,12 @@ for (i in j:nrow(puna_aeropuertos)) {
   
   j <- i
 }
+
+
+archivos <- list.files("entradas/ruteos/", full.names = T)
+
+puna_aeropuertos_osrm <- map(archivos, function(x) {read_rds(x)}) %>% 
+  list_rbind()
 
 puna_aeropuertos_osrm <- bind_rows(puna_aeropuertos_osrm) %>% 
   as_tibble()
