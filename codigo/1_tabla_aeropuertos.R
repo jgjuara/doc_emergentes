@@ -1,6 +1,7 @@
 library(tidyverse)
 library(arrow)
 library(comunicacion)
+library(sf)
 
 #...............................................................................
 #                                                                              .
@@ -49,7 +50,10 @@ aeropuertos <- base_total %>%
 
 aeros_regulares <- herramientas::read_file_srv("/srv/DataDNMYE/aerocomercial/tablero/mapa_conectividad.gpkg")
 
+lista_aeros <- unique(c(aeros_regulares$aeropuerto_etiqueta_anac.y, 
+                      aeros_regulares$aeropuerto_etiqueta_anac.x))
+
+
 
 aeropuertos <- aeropuertos %>% 
-  filter(aeropuertos$aeropuerto_etiqueta_anac %in%  unique(aeros_regulares$aeropuerto_etiqueta_anac.y, 
-                                                      aeros_regulares$aeropuerto_etiqueta_anac.x))
+  filter(aeropuerto_etiqueta_anac %in%  lista_aeros)
