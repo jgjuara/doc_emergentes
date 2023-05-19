@@ -1,9 +1,13 @@
 library(herramientas)
+library(tidyverse)
+library(sf)
 
 padron_afip <- read_file_srv('/srv/DataDNMYE/padron_afip/ubicacion_claes_turismo_empleo_dic19.csv')
 
+puna <- read_file_srv("/srv/DataDNMYE/capas_sig/puna_localidades_bahra.gpkg")
 
-bahra <- geoAr::get_bahra()
+
+# bahra <- geoAr::get_bahra()
 
 
 padron_afip <- padron_afip %>% 
@@ -11,7 +15,11 @@ padron_afip <- padron_afip %>%
   mutate(across(c(provincia, departamento_arcgis, localidad_arcgis), 
                 .fns = \(x) str_squish(textclean::replace_non_ascii(tolower(x))))) %>% 
   mutate(provincia = case_when(provincia == 'caba' ~  'ciudad de buenos aires', 
-                               T ~ provincia))
+                               T ~ provincia),
+         departamento_arcgis = case_when(provincia == 'ciudad de buenos aires' ~  'caba', 
+                                         T ~ departamento_arcgis),
+         localidad_arcgis = case_when(provincia == 'ciudad de buenos aires' ~  'ciudad de buenos aires', 
+                                      T ~ localidad_arcgis))
 padron_afip <- padron_afip %>% 
   mutate(cat_rct = case_when(substr(clae6,1,3) %in% c(473,491,492,501,502,511,524,771)~ "Transporte",
                            substr(clae6,1,3) %in% c(551,552)~ "Alojamiento",
@@ -27,15 +35,16 @@ padron_afip <- padron_afip %>%
 padron_afip <- padron_afip %>% 
   pivot_wider(names_from = cat_rct, values_from = prestadores)
 
-bahra <-  bahra %>% 
-  mutate(across(c(nom_pcia, nom_depto, nombre), 
-                .fns = \(x) str_squish(textclean::replace_non_ascii(tolower(x))))) %>% 
-  mutate(nom_depto = case_when(codprov_censo == '02' & coddepto_censo == '012' ~ 'comuna 12', 
-                               T ~ nom_depto))
+# bahra <-  bahra %>% 
+#   mutate(across(c(nom_pcia, nom_depto, nombre), 
+#                 .fns = \(x) str_squish(textclean::replace_non_ascii(tolower(x))))) %>% 
+#   mutate(nom_depto = case_when(codprov_censo == '02' & coddepto_censo == '012' ~ 'comuna 12', 
+#                                T ~ nom_depto))
 
-padron_afip_bahra <- left_join(padron_afip, bahra, by = c("provincia" = "nom_pcia",
-                                          "departamento_arcgis" = "nom_depto",
-                                          "localidad_arcgis" = "nombre"))
+puna_padron_afip <- left_join(puna, padron_afip,
+                               by = c("provincia" = "provincia",
+                                      "departamento_partido" = "departamento_arcgis",
+                                      "localidad" = "localidad_arcgis"))
 
 
 # padron_afip_bahra %>%
@@ -54,13 +63,9 @@ padron_afip_bahra <- left_join(padron_afip, bahra, by = c("provincia" = "nom_pci
 #   filter(is.na(codprov_censo) & localidad_arcgis !=  'no_pertenece') %>%
 #   summarise(sum(prestadores))
 
-padron_afip_bahra <- padron_afip_bahra %>% 
-  filter(!is.na(codprov_censo))
 
-class(padron_afip_bahra)
 
-padron_afip_bahra %>% 
-  st_as_sf(crs = 4326) %>% 
-  mapview::mapview()
+test <- padron_afip_aeropuertos %>% 
+  filter(if_all(.cols = 27:31 , .fns = is.na))
 
-puna_aero_afip <- left_join(puna_aeropuertos, padron_afip_bahra, by = c("cod_pcia" = "codprov_censo"))
+write_rds(puna_padron_afip, 'salidas/puna_prestadores.rds')

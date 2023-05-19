@@ -21,7 +21,7 @@ background-size: 30%
 
 # Big data para el Turismo
 
-### #LaRutaNatural PATAGONIA
+### #LaRutaNatural
 
 <br>
 <br>
@@ -114,7 +114,6 @@ div.my-footer span {
 
 
 ---
-
 layout: true
 
 <div class="my-footer"><span>DIRECCIÓN NACIONAL DE MERCADOS Y ESTADÍSTICA <a href="https://yvera.tur.ar/sinta"> - <b>www.yvera.tur.ar/sinta</a></b></span></div> 
@@ -131,23 +130,12 @@ background-size: 35%
 
 ### `r emojifont::emoji("robot")` SintIA
 
-<br>
 
-<br>
-
-<br>
- 
-
-<br>
-
-<br>
-
-<br>
-
-
-
-
-#### Sistema de Información Turística de la Argentina (SINTA)
+.pull-left[.center[
+## Sistema
+## de Información Turística 
+##de la Argentina (SINTA)
+]]
 
 
 
@@ -158,33 +146,112 @@ background-size: 35%
 class: middle
 
 background-image: url(https://media.licdn.com/dms/image/C4D03AQH-L8zuhFvlFw/profile-displayphoto-shrink_800_800/0/1626220093290?e=1689811200&v=beta&t=hXgS8oCkAVkrRfVuEG9NFT59JLjHzsrvPowCbXAPdwY)
-background-position: 70% 50%
-background-size: 15%
+background-position: 80% 50%
+background-size: 25%
 
 ### Juan Gabriel Juara
-#### (jgjuara@turismo.gob.ar)
 
+Coordinador del equipo de Datos
 
-`r emojifont::emoji("black_circle" )` Coordinador del equipo de Datos ~ Dirección Nacional de Mercados y Estadísticas - Ministerio de Turismo de la Nación
+####  Dirección Nacional de Mercados y Estadísticas 
 
-`r emojifont::emoji("black_circle" )` Lic. Sociología `Universidad de Buenos Aires`
+Sociológo -  `Universidad de Buenos Aires`
+
+*jgjuara@turismo.gob.ar* 
+
 
 
 ---
-background-image: url(https://tableros.yvera.tur.ar/recursos/logos_institucionales/sinta_a_color.png)
-background-position: 60% 25%
-background-size: 20%
 
 
-## Clasificación de Destinos
+## Medición del desarrollo turístico
 
-### Fuentes de Información
+### Hacia un indicador multidimensional para las localidades del país
+
+---
+
+### ¿Para qué medir el desarrollo turístico?
+
+--
+
+#### - Identificación temprana de oportunidades para el desarrollo
+
+--
+
+#### - Planificación basada en evidencia
+
+--
+
+#### - Transparencia en la toma de desiciones
+
+--
+
+#### - Continuidad en el tiempo de los criterios de gestión
+
+---
+
+### ¿Por qué localidades?
+
+#### `r emojifont::emoji("black_circle")` Unidades territoriales poblacionales de menor agregación para la gestión 
+
+#### `r emojifont::emoji("black_circle")` Vacancia de indicadores nacionales a nivel localidad
+
+--
+
+### ¿Por qué un indicador multidimensional?
+
+#### `r emojifont::emoji("black_circle")` Realidades locales diversas
+
+#### `r emojifont::emoji("black_circle")` Múltiples fuentes de datos
+
+#### `r emojifont::emoji("black_circle")` Necesidad de una armonización nacional en un único instrumento
+
+---
+
+### SINTA - *Sistema de Información Turística de la Argentina*
 
 --
 
 * Operativos estadísticos (`EOH, ETI, EVyTH`)
 
 --
+
+* Registros Administrativos (`PUNA, AFIP, ANAC, CNRT`, etc.)
+
+--
+
+* Reportes de estimaciones jurisdiccionales (trabajo en progreso: `<data>TUR`)
+
+
+---
+
+### Primeras aproximaciones al desafío
+
+--
+
+#### Informe sobre Destinos Turísticos en Argentina 
+
+#### **Año 2013**
+
+--
+
+- Fuente: EVyTH
+
+- Fortaleza: 
+
+--
+
+- Limitaciones:
+
+---
+
+#### Clasificación de localidades según nivel de desarrollo
+
+--
+
+- Fuente: PUNA
+
+
 
 * Registros Administrativos (`DNM, ANAC, APN`, etc.)
 
@@ -263,26 +330,6 @@ class: inverse, center, middle
 
 ### Botón de muestra: `Ids con origen en BARILOCHE`
 
-```{r ifas,  message=FALSE, warning=FALSE, echo = FALSE, out.height='75%', out.width= '100%'}
-library(herramientas)
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.2 # Easily Install and Load the 'Tidyverse', CRAN v1.3.2
-library(sf) # Simple Features for R, CRAN v1.0-9 # Simple Features for R, CRAN v1.0-9
-library(leaflet) # Create Interactive Web Maps with the JavaScript 'Leaflet'
-
-
-
-
-ifa_bariloche <- read_sf("entradas/bariloche_ifas_interno.geojson")
-
-
-
-leaflet() %>%
-  geoAr::addArgTiles() %>% 
-  leaflet::addCircles(data = ifa_bariloche, color = "red", fillOpacity = .5) 
-
-
-
-```
 
 
 ---
@@ -329,78 +376,7 @@ class: inverse, center, middle
 ---
 ### Botón de muestra: Ids únicos por país de origen
 
-```{r, message=FALSE, warning=FALSE, echo = FALSE}
-library(tidyverse)
-library(arrow)
-library(comunicacion)
-library(herramientas)
-library(leaflet)
-library(sf)
 
-paises_nombres <- read_csv('https://gist.githubusercontent.com/brenes/1095110/raw/c8f208b03485ba28f97c500ab7271e8bce43b9c6/paises.csv')
-
-renombrar_paises <- function(x) {
-  left_join(x, paises_nombres %>% select(iso2, nombre), 
-            by = c("HomeCountry" = "iso2")) %>% 
-  select(pais = nombre, everything())
-  }
-```
-
-
-```{r graf ifas ext x pais,  message=FALSE, warning=FALSE, echo = FALSE, eval=FALSE}
-
-
-# ifas_ext <- read_parquet("entradas/ifas_extranjeros_enarg.parquet")
-# 
-# n_ifas_pais <- ifas_ext %>% 
-#   distinct(IFA, HomeCountry) %>% 
-#   group_by(HomeCountry) %>% 
-#   summarise(n = n())
-# 
-# write_rds(n_ifas_pais, 'entradas/n_ifas_pais.rds')
-
-n_ifas_pais <- read_rds('entradas/n_ifas_pais.rds')
-
-n_ifas_pais <- n_ifas_pais %>% 
-  mutate(HomeCountry = fct_lump(HomeCountry,
-                                n = 15, w = n, other_level = "Otros")) %>%
-  group_by(HomeCountry) %>% 
-  summarise(n = sum(n)) %>% 
-  ungroup() 
-
-n_ifas_pais <- renombrar_paises(n_ifas_pais)
-
-n_ifas_pais <- n_ifas_pais %>% 
-  mutate(pais = ifelse(HomeCountry == "Otros", "Otros paises", pais))
-
-n_ifas_pais <- n_ifas_pais %>% 
-  mutate(pais = fct_reorder(pais, n))
-
-plot <- ggplot(n_ifas_pais) +
-  geom_col(aes(pais, n, fill = pais),
-           show.legend = F) +
-  geom_text(aes(pais, n, 
-                 label = lbl_int(n)),
-             hjust = -0.15, size = 2.5) +
-    ggimage::geom_flag(data = n_ifas_pais,
-                     aes(x = pais, y = n+28000,
-                         image = HomeCountry)) +
-  scale_fill_dnmye() +
-  scale_y_continuous(labels = lbl_int, expand = expansion(add = c(0, 25000))) +
-  coord_flip() +
-  labs(x = "", y = "") +
-  theme_minimal() +
-  theme(text = element_text(size = 12)) 
-
-
-ggsave(plot = plot, "entradas/plot_banderas.png", dpi = 300,
-       width = 6, height = 4)
-```
-
-
-```{r echo=FALSE, out.height="70%", out.width="70%"}
-knitr::include_graphics("entradas/plot_banderas.png")
-```
 
 
 ---
@@ -422,21 +398,11 @@ knitr::include_graphics("entradas/plot_banderas.png")
 ## Caso de Uso 
 
 
-```{r lrn, echo=FALSE, out.height= '120'}
-
-knitr::include_graphics("https://tableros.yvera.tur.ar/recursos/logos_institucionales/ruta_natural_apaisado.png")
-
-```
-
 ---
 class: inverse center, middle
 
 # Rutas de la Patagonia & bigdata
-```{r lrn_blaco, echo=FALSE, out.height= '120'}
 
-knitr::include_graphics("https://tableros.yvera.tur.ar/recursos/logos_institucionales/rn_apaisado_blanco.png")
-
-```
 
 ---
 
@@ -444,84 +410,7 @@ knitr::include_graphics("https://tableros.yvera.tur.ar/recursos/logos_institucio
 
 #### Análisis de visitas en todo el país (receptivo)
 
-```{r levanta ifas receptivos, message=FALSE, warning=FALSE, echo = FALSE}
 
-# esto queda comentado para evitar levantar todos los datos
-# set.seed(45)
-
-# geo_ifas_ext_sample <- ifas_ext %>% 
-#   slice_sample(n = 10000) 
-
-# esto es una muestra de 10 mil señales
-geo_ifas_ext_sample <- read_file_srv("big_data/presentacion/sample_ifas_receptivo.parquet")
-
-
-geo_ifas_ext_sample <- renombrar_paises(geo_ifas_ext_sample)
-
-geo_ifas_ext_sample <-  geo_ifas_ext_sample %>% 
-  st_as_sf(coords = c("Lon", "Lat"), crs = 4326)
-
-
-
-```
-
-
-```{r,  message=FALSE, warning=FALSE, echo = FALSE}
-rutas_naturales <- read_file_srv('big_data/presentacion/rutas_naturales.geojson')
-
-rutas_naturales <- rutas_naturales %>% 
-  group_by(name) %>% 
-  mutate(geometry = st_union(geometry))
-
-palrn <- function(x) {
-  
-  case_when(
-                               str_detect(x, "Selva Misionera") ~ "#6aa84f",
-                               str_detect(x, "Iberá") ~ "#f6b26b",
-                               str_detect(x, "Litoral") ~ "#d9ead3",
-                               str_detect(x, "Gran Chaco") ~ "#46bdc6",
-                               str_detect(x, "Puna") ~ "#e9795b",
-                               str_detect(x, "Valles, Quebradas y Yungas") ~ "#34a853",
-                               str_detect(x, "Altos Andes") ~ "#999999",
-                               str_detect(x, "Desiertos y Volcanes") ~ "#ffe599",
-                               str_detect(x, "Sierras Centrales") ~ "#d5a6bd",
-                               str_detect(x, "Llanura") ~ "#e2bcf1",
-                               str_detect(x, "Estepa") ~ "#fce5cd",
-                               str_detect(x, "Patagonia Andina") ~ "#b6d7a8",
-                               str_detect(x, "Patagonia Austral") ~ "#34d7d7",
-                               str_detect(x, "Fin del Mundo") ~ "#cccccc",
-                               str_detect(x, "Mar Patagónico") ~ "#dff2e2",
-                               str_detect(x, "Delta") ~ "#b28fbf",
-                               T ~ NA_character_
-  )
-  
-}
-  
-
-
-rutas_naturales <- rutas_naturales %>% 
-  mutate(color = palrn(name))
-
-rutas_naturales <- rutas_naturales %>% 
-  mutate(color= ifelse(name %in% c("Ruta de la Patagonia Andina",
-                                   "Ruta del Mar Patagónico",
-                                   "Ruta del Fin del Mundo",
-                                   "Ruta de la Patagonia Austral",
-                                   "Ruta de la Estepa"), color, "#AAAAAA"))
-
-```
-
-
-```{r plot-first, warning=FALSE, echo=FALSE, out.height="60%", out.width="90%"}
-
-
-geo_ifas_ext_sample %>% 
-  leaflet() %>% 
-  geoAr::addArgTiles() %>% 
-  addPolygons(data = rutas_naturales, fillColor = ~ color, weight = 0, fillOpacity = 0.7, popup = ~ name) %>% 
-  addCircles(popup = ~ lapply(glue::glue("Fecha: {Date}<br>IFA: {substr(IFA,1,7)}...<br>País: {pais}"),
-                              htmltools::HTML))
-```
 
 ---
 
@@ -533,31 +422,6 @@ geo_ifas_ext_sample %>%
   (cada color es un país de origen diferente).
 
 
-```{r message=FALSE, warning=FALSE, echo = FALSE}
-
-patagonia_andina <-  rutas_naturales %>% filter(name == "Ruta de la Patagonia Andina")
-
-ifas_ext_patagonia_andina <- geo_ifas_ext_sample %>% 
-  st_filter(patagonia_andina)
-
-paisespal <- colorFactor(palette = dnmye_paletas()(length(unique(ifas_ext_patagonia_andina$pais))),
-                        domain = unique(ifas_ext_patagonia_andina$pais))
-
-```
-
-
-```{r message=FALSE, warning=FALSE, echo = FALSE, out.height="60%", out.width="90%"}
-
-ifas_ext_patagonia_andina %>% 
-  leaflet() %>% 
-  geoAr::addArgTiles() %>% 
-  addPolygons(data = patagonia_andina, fillColor = ~ color, weight = 0, fillOpacity = 0.7, popup = ~ name) %>% 
-  setView(lat = -41.137,lng =  -71.304, zoom = 6) %>% 
-  addCircles(color = ~ paisespal(pais), fillOpacity = 1,
-             popup = ~ lapply(glue::glue("Fecha: {Date}<br>IFA: {substr(IFA,1,7)}...<br>País: {pais}"),
-                              htmltools::HTML))
-  # addLegend(pal = factpal, values = unique(geo_ifas_ext_sample$HomeCountry)[1:10], opacity = 1)
-```
 
 ---
 
@@ -565,28 +429,7 @@ ifas_ext_patagonia_andina %>%
 
 - La georeferenciación precisa permite realizar el análisis para cualquier polígono de interés.
 
-```{r message=FALSE, warning=FALSE, echo = FALSE, out.height="60%", out.width="90%"}
 
-imperdibles <- read_file_srv('big_data/presentacion/imperdibles.gpkg')
-
-imperdibles_patagonia_andina <- imperdibles %>% 
-  filter(ruta_natural == "Patagonia Andina")
-
-
-ifas_ext_patagonia_andina %>% 
-  leaflet() %>% 
-  geoAr::addArgTiles() %>% 
-  addPolygons(data = imperdibles_patagonia_andina,
-              fillColor = dnmye_colores("pera"),
-              color = dnmye_colores("pera"), popup = ~ lapply(glue::glue("{nombre_ppal}"),
-                              htmltools::HTML), fillOpacity = 0.7) %>% 
-  setView(lat = -41.137,lng =  -71.304, zoom = 6) %>% 
-  addCircles(color = ~ paisespal(pais), 
-             popup = ~ lapply(glue::glue("Fecha: {Date}<br>IFA: {substr(IFA,1,7)}...<br>País: {pais}"),
-                              htmltools::HTML), fillOpacity = 1)
-  # addLegend(pal = factpal, values = unique(geo_ifas_ext_sample$HomeCountry)[1:10], opacity = 1) 
-
-```
 
 ---
 class: inverse, center, middle
@@ -598,9 +441,6 @@ class: inverse, center, middle
 
 ---
 
-```{r echo=FALSE, out.height="60%", out.width="70%"}
-knitr::include_graphics("entradas/top_pais_rn_andina.png")
-```
 
 
 ---

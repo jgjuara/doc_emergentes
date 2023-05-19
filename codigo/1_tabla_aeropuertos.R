@@ -72,7 +72,7 @@ aeropuertos <- aeropuertos %>%
 
 
 aeropuertos <- aeropuertos %>% 
-  select(-c(6:18, 21:26))
+  select(-c(10:22, 25:30))
 
 aeropuertos <- aeropuertos %>% 
   filter(aeropuerto_etiqueta_anac != 'Aeropuerto El Palomar')
