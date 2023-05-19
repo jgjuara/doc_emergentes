@@ -17,18 +17,32 @@ library(sf)
 
 base_total <- herramientas::read_file_srv("aerocomercial/anac/base_anac_agrupada_diaria.parquet")
 
+
+# calculo metricas x aeropuerto
 base_total <- base_total %>%
   pivot_longer(cols = c(origen_oaci, destino_oaci),
                names_to = "variable",
                values_to = "oaci") %>%
   filter(oaci != "EGYP" & anio_local == 2019) %>%
   group_by(oaci, mes_local) %>%
-  summarise(pasajeros = sum(pax_ad, na.rm = T),
-            frecuencias = sum(ceiling(vuelos), na.rm = T)) %>%
+  summarise(asientos = sum(asientos_pax, na.rm = T),
+            sum_asientos_cabotaje = sum(asientos_pax[clasificacion_vuelo == "Cabotaje"]),
+            sum_asientos_internacional = sum(asientos_pax[clasificacion_vuelo == "Internacional"]),
+            frecuencias = sum(ceiling(vuelos), na.rm = T), 
+            rutas_int = n_distinct(ruta_nombre[clasificacion_vuelo == "Internacional"]),
+            rutas_cabotaje = n_distinct(ruta_nombre[clasificacion_vuelo == "Cabotaje"]))%>%
   group_by(oaci) %>% 
-  summarise(pasajeros = max(pasajeros),
-            frecuencias = max(frecuencias)) %>% 
+  summarise(max_asientos = max(asientos), # capacidad potencial
+            max_frecuencias = max(frecuencias), # capacidad potencial
+            media_asientos_cabotaje = mean(sum_asientos_cabotaje),
+            media_asientos_internacional = mean(sum_asientos_internacional),
+            rutas_int = median(rutas_int), # menos sensible a ruido de rutas circunstanciales
+            rutas_cabotaje = median(rutas_cabotaje)) %>% # menos sensible a ruido de rutas circunstanciales
   ungroup()
+
+base_total <- base_total %>%
+  mutate(indice_cabotaje =  media_asientos_cabotaje*rutas_cabotaje,
+         indice_int = media_asientos_internacional*rutas_int)
 
 
 aeropuertos <- herramientas::read_file_srv("aerocomercial/libros_de_codigos/ANAC/aeropuertos_nuevos.xlsx",
@@ -53,7 +67,13 @@ aeros_regulares <- herramientas::read_file_srv("/srv/DataDNMYE/aerocomercial/tab
 lista_aeros <- unique(c(aeros_regulares$aeropuerto_etiqueta_anac.y, 
                       aeros_regulares$aeropuerto_etiqueta_anac.x))
 
+aeropuertos <- aeropuertos %>% 
+  filter(aeropuerto_etiqueta_anac %in%  lista_aeros)
 
 
 aeropuertos <- aeropuertos %>% 
-  filter(aeropuerto_etiqueta_anac %in%  lista_aeros)
+  select(-c(6:18, 21:26))
+
+aeropuertos <- aeropuertos %>% 
+  filter(aeropuerto_etiqueta_anac != 'Aeropuerto El Palomar')
+
