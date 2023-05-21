@@ -21,7 +21,7 @@ background-size: 30%
 
 # Big data para el Turismo
 
-### #LaRutaNatural
+### #LaRutaNatural PATAGONIA
 
 <br>
 <br>
@@ -77,7 +77,7 @@ style_mono_light(outfile = "dnmye_theme.css", # CSS FILE
 ```
 
 
-```{r setup, include=FALSE, eval = FALSE}
+```{r setup, include=FALSE, eval = TRUE}
 options(htmltools.dir.version = FALSE)
 knitr::opts_chunk$set(
   fig.width=9, fig.height=3.5, fig.retina=3,
@@ -128,13 +128,12 @@ background-position: 80% 70%
 background-size: 35%
 
 
-### `r emojifont::emoji("robot")` SintIA
 
+<br>
 
 .pull-left[.center[
-## Sistema
-## de Información Turística 
-##de la Argentina (SINTA)
+## `r emojifont::emoji("robot")` SintIA
+##El bot del Sistema de Información Turística de la Argentina (SINTA)
 ]]
 
 
@@ -145,7 +144,7 @@ background-size: 35%
 
 class: middle
 
-background-image: url(https://media.licdn.com/dms/image/C4D03AQH-L8zuhFvlFw/profile-displayphoto-shrink_800_800/0/1626220093290?e=1689811200&v=beta&t=hXgS8oCkAVkrRfVuEG9NFT59JLjHzsrvPowCbXAPdwY)
+
 background-position: 80% 50%
 background-size: 25%
 
@@ -155,20 +154,25 @@ Coordinador del equipo de Datos
 
 ####  Dirección Nacional de Mercados y Estadísticas 
 
-Sociológo -  `Universidad de Buenos Aires`
+#### Ministerio de Turismo y Deportes de la Nación
 
-*jgjuara@turismo.gob.ar* 
+Sociológo -  Universidad de Buenos Aires
+
+jgjuara@turismo.gob.ar
 
 
 
 ---
-
+class: middle
 
 ## Medición del desarrollo turístico
 
 ### Hacia un indicador multidimensional para las localidades del país
 
 ---
+<br>
+<br>
+<br>
 
 ### ¿Para qué medir el desarrollo turístico?
 
@@ -189,257 +193,184 @@ Sociológo -  `Universidad de Buenos Aires`
 #### - Continuidad en el tiempo de los criterios de gestión
 
 ---
+<br>
+<br>
 
-### ¿Por qué localidades?
+### ¿Por qué un indicador multidimensional para  localidades?
 
-#### `r emojifont::emoji("black_circle")` Unidades territoriales poblacionales de menor agregación para la gestión 
-
-#### `r emojifont::emoji("black_circle")` Vacancia de indicadores nacionales a nivel localidad
+#### `r emojifont::emoji("black_circle")` Vacancia de indicadores nacionales a bajos niveles de desagregación geográfica
 
 --
 
-### ¿Por qué un indicador multidimensional?
 
 #### `r emojifont::emoji("black_circle")` Realidades locales diversas
 
+--
+
 #### `r emojifont::emoji("black_circle")` Múltiples fuentes de datos
+
+--
 
 #### `r emojifont::emoji("black_circle")` Necesidad de una armonización nacional en un único instrumento
 
 ---
+<br>
+<br>
 
 ### SINTA - *Sistema de Información Turística de la Argentina*
 
 --
 
-* Operativos estadísticos (`EOH, ETI, EVyTH`)
+#### Operativos estadísticos: `EOH, ETI, EVyTH`
 
 --
 
-* Registros Administrativos (`PUNA, AFIP, ANAC, CNRT`, etc.)
+#### Registros Administrativos (`PUNA, AFIP, ANAC, CNRT`, etc.)
 
 --
 
-* Reportes de estimaciones jurisdiccionales (trabajo en progreso: `<data>TUR`)
+#### Reportes de estimaciones jurisdiccionales **Sistema Federal de Gestión de Datos  Turísticos `<data>TUR` (trabajo en progreso)**
+
+
+---
+<br>
+
+### Aproximaciones al desafío
+
+--
+
+#### 1. Informe sobre Destinos Turísticos en Argentina 
+
+#### 2. Clasificación de localidades según nivel de desarrollo
+
+#### 3. Hacia donde vamos: Indicador multidimensional
+
+---
+
+<br>
+### Informe sobre Destinos Turísticos en Argentina 
+
+#### Año 2013
+
+--
+
+- **Fuente:** EVyTH
+
+- **Fortalezas:**
+
+    - Datos de perfil del turismo: estadía promedio, gasto promedio, diferencia entre turistas y excursionistas, datos de alojamiento y medio de transporte usado, entre otros.
+    
+    - Estimaciones confiables a nivel nacional y regional trimestrales y provincial anual. 
+
+--
+
+- **Limitaciones:**
+
+    - Dificultad para estimaciones en destinos a menor nivel de agregación debido a la naturaleza muestral del dato. 
+    <!-- Por ej. extremadamente dificil si tienen volumen de turistas menor a 100 mil anual. -->
+
+
+---
+<br>
+
+### Clasificación de localidades según nivel de desarrollo
+
+#### Marzo 2023
+
+--
+
+- **Fuente:** PUNA
+
+- **Fortalezas:**
+  - Cobertura geográfica a nivel localidad
+  - Datos registrales: el error no es muestral
+
+--
+
+- **Limitaciones:**
+    - Sólo contempla la oferta
+    - Unidimensional
+    - No mide oferta que no está formalmente registrada
+    
+---
+
+### Clasificación de localidades según nivel de desarrollo
+
+
+
+<!-- ![:scale 50%]('salidas/hist_puna_clasif.png') -->
 
 
 ---
 
-### Primeras aproximaciones al desafío
-
---
-
-#### Informe sobre Destinos Turísticos en Argentina 
-
-#### **Año 2013**
-
---
-
-- Fuente: EVyTH
-
-- Fortaleza: 
-
---
-
-- Limitaciones:
 
 ---
 
-#### Clasificación de localidades según nivel de desarrollo
+<br>
+
+### Indicador multidimensional del desarrollo turístico
+
+#### En construcción
 
 --
 
-- Fuente: PUNA
+¿Qué buscamos?
 
+- Un indicador que contemple 3 dimensiones: 
+    - Demanda efectiva
+    - Oferta efectiva
+    - Potencialidad turística identificada
+    
+- Que tenga granularidad a nivel localidad.
 
+- Que permita frecuencia mínima anual.
 
-* Registros Administrativos (`DNM, ANAC, APN`, etc.)
-
---
-
-* Reportes de datos jurisdiccionales (trabajo en progreso: `<data>TUR`)
-
-
---
-
-### Informe sobre Destinos Turísticos (2013) `r emojifont::emoji("heavy_exclamation_mark")` - `big data`
-
-`Desarrollo de una fuente de información complementaria a partir de señales emitidas por aplicaciones de dispositivos móviles`
+- Que tenga una metodología de cálculo formalizable.
 
 ---
-class: inverse
+### Indicador multidimensional del desarrollo turístico
 
-### Clasificación de localidades (2022)
+#### Fuentes identificadas
 
---
+- **Registrales:**
 
-### Una base nacional de indicadores
+    - PUNA
+    - AFIP
+    - CNRT
+    - ANAC
+    
+- **No registrales**
 
-Se puede identificar el _radio censal_ de la "residencia habitual" (origen <-> NSE)
+    - Mapa de Imperdibles
+    - EOH
+    - EVyTH
+    - ETI
 
---
+---
+### Indicador multidimensional del desarrollo turístico
+#### PUNA
 
-### B) Receptivo:
 
-Se puede determinar el _país de origen_ del dispositivo  (mercados internacionales)
+```{r}
+
+```
 
 
 ---
-class: inverse, center, middle
-
-## (A) Ejemplo:  Ids `Residentes`
+### Indicador multidimensional del desarrollo turístico
+#### AFIP
 
 ---
+### Indicador multidimensional del desarrollo turístico
+#### CNRT
 
-### Punto de partida: `Residentes`
-
-1. 6.700M registros;  4 _datasets_ (`IFA, GEO, CEL/CDL, APPS`); 300 GB información
-
---
-
-2. 17M de celulares únicos, durante 12 meses, con granularidad diaria (año pre pandemia).
-
---
-
-#### Procesamiento (Ejemplo Ids)
-
-
-3. Registros iniciales: **70M** 
-
---
-
-4. Sin coordenadas (lat-lon): **10M** (14%)
-
---
-
-5. Sin _Departamento_: **3M** (4%) 
-
---
-
-6. Ids únicos: **16M**
-
---
-
-#### Datos resultantes
-
-7. Con _Departamento_ determinable: **12M (~ 1/2 mayores de 16 años con celular)**
-
+---
+### Indicador multidimensional del desarrollo turístico
+#### ANAC
 
 
 ---
 
-### Botón de muestra: `Ids con origen en BARILOCHE`
-
-
-
----
-class: inverse, center, middle
-
-## (B) Ejemplo: Id´s `receptivo`
-
----
-
-
-### Punto de partida: `receptivo`
-
-1. **16,69 M** de registros con información diaria de latitud y longitud a 5 decimales y país de origen del dispositivo.
-
---
-
-2. Actividad de **592.684** de dispositivos únicos, durante 12 meses (año prepandemia).
-
---
-
-#### Procesamiento (Ejemplo Ids)
-
-
-1. Registros iniciales: **16,69 M**
-
---
-
-2. Exclusión de registros posteriores a marzo 2020 y/o con  coordenadas fuera de Argentina.
-
---
-
-3. Redondeo de las coordenadas a tres decimales de precisión.
-
---
-
-4. Deduplicación de registros con igual coordenada y fecha (año-mes-día)
-
---
-
-#### Datos resultantes
-
-5. Registros seleccionados: **6,44 M** de **373.287** Ids únicos
-
----
-### Botón de muestra: Ids únicos por país de origen
-
-
-
-
----
-
-# ¿Por qué es útil?
-
---
-
-
-### `r emojifont::emoji("heavy_check_mark")`  Complemento de fuentes existentes
-
---
-
-### `r emojifont::emoji("heavy_check_mark")`  Granularidad espacio - temporal poco frecuente
-
-
---
-
-## Caso de Uso 
-
-
----
-class: inverse center, middle
-
-# Rutas de la Patagonia & bigdata
-
-
----
-
-### ¿Cómo usamos la herramienta?
-
-#### Análisis de visitas en todo el país (receptivo)
-
-
-
----
-
-### Encontrando visitas 
- 
-- Diferenciar las visitas con alta granularidad geográfica (`Ruta Natural Patagonia Andina`)
-
-- Estimar el origen del visitante aún en donde no hay cobertura de encuestas
-  (cada color es un país de origen diferente).
-
-
-
----
-
-### Analizar visitas a Imperdibles
-
-- La georeferenciación precisa permite realizar el análisis para cualquier polígono de interés.
-
-
-
----
-class: inverse, center, middle
-
-## Principales hallazgos
-
-
-# IDs Receptivos (no residentes)
-
----
 
 
 
@@ -450,3 +381,12 @@ class:  center, middle, inverse
 # ¡Muchas gracias!
 
 ##[**`yvera.tur.ar/sinta`**](https://www.yvera.tur.ar/sinta/)
+
+---
+
+## Referencias
+
+- Informe sobre Destinos Turísticos en Argentina (DNMYE, 2013) https://www.yvera.tur.ar/sinta/informe/documentos/descarga/764963e66a7eba7f815658e96a0277d9e76f00ed.pdf 
+
+- 
+
