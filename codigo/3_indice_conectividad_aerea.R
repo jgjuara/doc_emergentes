@@ -1,5 +1,8 @@
+library(herramientas)
 library(tidyverse)
 library(sf)
+library(leaflet)
+library(geoAr)
 
 source('codigo/1_tabla_aeropuertos.R')
 
@@ -48,6 +51,46 @@ puna_aeropuertos <- puna_aeropuertos %>%
 
 write_rds(puna_aeropuertos, 'salidas/puna_aeropuertos.rds')
 
+
+puna_aeropuertos <- read_rds('salidas/puna_aeropuertos.rds')
+
+
+
+
+puna_aeropuertos <- puna_aeropuertos %>% 
+  mutate(etiq = glue::glue(
+    "{str_to_title(localidad)}
+    <table>
+  <tr>
+    <th>Aeropuerto cercano</th>
+    <th>{aero_mas_cerca}</th>
+  </tr>
+  <tr>
+    <th>Tiempo</th>
+    <th>{lbl_int(tiempo_aero_cerca)}min.</th>
+  </tr>
+  <tr>
+    <th>Indice Cabotaje</th>
+    <th>{lbl_int(indice_cabotaje_mas_cerca)}</th>
+  </tr>
+  <tr>
+    <th>Indice Internacional</th>
+    <th>{lbl_int(indice_int_mas_cerca)}</th>
+  </tr>
+</table>"
+  ))
+
+puna <- read_file_srv("/srv/DataDNMYE/capas_sig/puna_localidades_bahra.gpkg")
+
+
+puna_aeropuertos <- left_join(puna, puna_aeropuertos)
+
+puna_aeropuertos %>% 
+  filter(!st_is_empty(geom)) %>% 
+  mutate(geom = st_cast(geom, "POINT")) %>% 
+  leaflet() %>% 
+  addArgTiles() %>% 
+  addCircleMarkers(color = comunicacion::dnmye_colores("rosa"), label = ~ lapply(etiq, htmltools::HTML) , popup = ~ lapply(etiq, htmltools::HTML))
 
 # 
 # # tabla <- tabla %>%

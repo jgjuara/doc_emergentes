@@ -1,6 +1,8 @@
 library(herramientas)
 library(tidyverse)
 library(sf)
+library(leaflet)
+library(geoAr)
 
 padron_afip <- read_file_srv('/srv/DataDNMYE/padron_afip/ubicacion_claes_turismo_empleo_dic19.csv')
 
@@ -69,3 +71,16 @@ test <- padron_afip_aeropuertos %>%
   filter(if_all(.cols = 27:31 , .fns = is.na))
 
 write_rds(puna_padron_afip, 'salidas/puna_prestadores.rds')
+
+puna_padron_afip <- read_rds('salidas/puna_prestadores.rds') 
+
+
+puna_padron_afip %>% 
+  st_cast(to = 'POINT') %>% 
+  filter(!st_is_empty(geom)) %>% 
+  filter(!is.na(Transporte) & !is.na(Gastronomía)) %>% 
+  mutate(across(.cols = c(Transporte,Gastronomía, Alojamiento, `Otros Servicios Turísticos`), function(x) {replace_na(as.character(x), "sd.")})) %>% 
+  mutate(etiq = glue::glue('{str_to_title(localidad)}<br>Gastronomía = {Gastronomía}<br>Transporte:{Transporte}')) %>% 
+  leaflet() %>%
+  addArgTiles() %>% 
+  addCircleMarkers(label = ~ lapply(etiq, htmltools::HTML))

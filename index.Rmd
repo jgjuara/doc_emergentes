@@ -19,22 +19,22 @@ background-image: url(https://tableros.yvera.tur.ar/recursos/logos_institucional
 background-position: 95% 95%
 background-size: 30%
 
-# Big data para el Turismo
-
-### #LaRutaNatural PATAGONIA
-
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-
 ### Dirección Nacional de Mercados y Estadística<br>Subsecretaría de Desarrollo Estratégico
+
+### #LaRutaNatural
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+
 
 
 
@@ -59,6 +59,12 @@ xaringanExtra::use_webcam()
 ```{r dnmye_theme, include=FALSE, warning=FALSE, eval=TRUE}
 library(xaringanthemer) #EVAL FALSE
 library(comunicacion)
+library(herramientas)
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(geoAr)
+
 style_mono_light(outfile = "dnmye_theme.css", # CSS FILE
                  # FONTS
                   header_font_google = google_font('Encode Sans'),
@@ -294,19 +300,88 @@ class: middle
     
 ---
 
-### Clasificación de localidades según nivel de desarrollo
-
-
-
-<!-- ![:scale 50%]('salidas/hist_puna_clasif.png') -->
-
+.center[.middle[<img src="graficos/tablero_puna.png" style="width: 90%" />]]
 
 ---
+
+### Clasificación de localidades según nivel de desarrollo
+
+.center[<img src="graficos/hist_puna_clasif.png" style="width: 70%" />]
+
+---
+
+```{r, out.height= '90%', echo = FALSE}
+puna_geom <- read_file_srv("/srv/DataDNMYE/capas_sig/puna_localidades_bahra.gpkg")
+
+puna_geom <- puna_geom %>% 
+  mutate(clasificacion = case_when(
+    plazas <= 600 ~ "Emergente",
+    plazas > 600 & plazas <= 2000 ~ "En desarrollo",
+    plazas > 2000 ~ "Consolidado", 
+  )) %>% 
+  mutate(clasificacion =  factor(clasificacion, levels = c("Emergente",
+                                                           "En desarrollo",
+                                                           "Consolidado"))
+  )
+
+bahra <- read_file_srv("/srv/DataDNMYE/capas_sig/bahra_base_total.geojson") %>% 
+  filter(str_detect(nombre, "Tolhuin")) %>% 
+  select(nombre, geometry) #%>% 
+  
+tolhuin <- bahra %>% 
+  mutate(long = unlist(map(bahra$geometry,1)),
+         lat = unlist(map(bahra$geometry,2))) %>% 
+  st_drop_geometry()
+
+tolhuin <- puna_geom %>% 
+  st_drop_geometry() %>% 
+  filter(localidad == "tolhuin") %>% 
+  cbind(tolhuin %>% select(-1)) %>% 
+  st_drop_geometry()
+
+puna <- puna_geom %>% 
+  st_cast("POINT") %>% 
+  mutate(long = unlist(map(geom,1)),
+         lat = unlist(map(geom,2))) %>% 
+  st_drop_geometry() %>% 
+  rbind(tolhuin) %>% 
+  st_as_sf(coords = c("long", "lat"), crs = 4326)
+
+#write_sf(puna, "salidas/puna_localidades_bahra2.geojson")
+
+puna <- puna %>% 
+  mutate(across(c(provincia, departamento_partido, localidad),  toupper))
+
+labels <- paste0("Localidad: ", puna$localidad,
+                 "<br>Departamento: ",  puna$departamento_partido,
+                 "<br>Provincia: ",  puna$provincia,
+                 "<br>Plazas: ",  puna$plazas,
+                 "<br>Establecimientos: ",  puna$establecimientos,
+                 "<br>Clasificación: ",  puna$clasificacion) %>%
+    lapply(htmltools::HTML)
+
+pal <- colorFactor(
+  palette = c(comunicacion::dnmye_colores("purpura"),
+              comunicacion::dnmye_colores("azul verde"),
+              comunicacion::dnmye_colores("naranja")),
+  domain = puna$clasificacion
+)
+
+leaflet() %>% 
+  addArgTiles() %>% 
+  addCircleMarkers(data = puna, color = ~ pal(clasificacion),
+             label = labels, popup = labels) %>% 
+  addLegend(pal = pal, values = puna$clasificacion, opacity = 1)
+
+```
+
 
 
 ---
 
 <br>
+
+
 
 ### Indicador multidimensional del desarrollo turístico
 
@@ -316,16 +391,44 @@ class: middle
 
 ¿Qué buscamos?
 
+--
+
 - Un indicador que contemple 3 dimensiones: 
-    - Demanda efectiva
-    - Oferta efectiva
-    - Potencialidad turística identificada
+    - Demanda 
+    - Oferta 
+    - Recursos turísticos identificados
     
 - Que tenga granularidad a nivel localidad.
 
 - Que permita frecuencia mínima anual.
 
 - Que tenga una metodología de cálculo formalizable.
+
+---
+### Indicador multidimensional del desarrollo turístico
+#### Demanda 
+
+**Proxys**
+  - Pasajeros arribados en base CNRT
+  - Pasajeros arribados en base a ANAC
+  - Datos de Ocupación según EOH / reportes de áreas estadísticas locales
+  - Visitantes Áreas Protegidas
+
+--
+#### Oferta
+**Proxys**
+  - Empresas Registradas Ramas Características del Turismo (RCT)
+  - Establecimientos Registros RCT
+  - PUNA
+  - Registros de Agencias de Viajes
+  
+--
+#### Potencialidad
+**Proxys**
+  - Proximidad de imperdibles identificados
+  - Fiestas Nacionales, Provinciales, Locales
+  - Puntos de Conexión Internacional
+  - Conectividad Vial 
 
 ---
 ### Indicador multidimensional del desarrollo turístico
@@ -347,30 +450,88 @@ class: middle
     - ETI
 
 ---
+
 ### Indicador multidimensional del desarrollo turístico
 #### PUNA
 
+**¿Qué queda por agregar?**
 
-```{r}
+#### El Sistema Federal de Gestión de Datos  Turísticos para  mejorar la frecuencia de actualización de los de datos
+
+.center[<img src="graficos/datatur.png" style="width: 50%" />]
+
+
+
+---
+
+### Indicador multidimensional del desarrollo turístico
+#### EMPRESAS REGISTRADAS
+
+```{r, echo = FALSE, out.height= '60%'}
+
+puna_padron_afip <- read_rds('salidas/puna_prestadores.rds') 
+
+
+puna_padron_afip %>% 
+  st_cast(to = 'POINT') %>% 
+  filter(!st_is_empty(geom)) %>% 
+  filter(!is.na(Transporte) & !is.na(Gastronomía)) %>% 
+  mutate(across(.cols = c(Transporte,Gastronomía, Alojamiento, `Otros Servicios Turísticos`), function(x) {replace_na(as.character(x), "sd.")})) %>% 
+  mutate(etiq = glue::glue('{str_to_title(localidad)}<br>Gastronomía = {Gastronomía}<br>Transporte:{Transporte}')) %>% 
+  leaflet() %>%
+  addArgTiles() %>% 
+  addCircleMarkers(label = ~ lapply(etiq, htmltools::HTML), popup =  ~ lapply(etiq, htmltools::HTML))
 
 ```
 
 
 ---
 ### Indicador multidimensional del desarrollo turístico
-#### AFIP
-
----
-### Indicador multidimensional del desarrollo turístico
-#### CNRT
-
----
-### Indicador multidimensional del desarrollo turístico
 #### ANAC
 
+```{r}
 
----
+puna_aeropuertos <- read_rds('salidas/puna_aeropuertos.rds')
 
+
+
+
+puna_aeropuertos <- puna_aeropuertos %>% 
+  mutate(etiq = glue::glue(
+    "{str_to_title(localidad)}
+    <table>
+  <tr>
+    <th>Aeropuerto cercano</th>
+    <th>{aero_mas_cerca}</th>
+  </tr>
+  <tr>
+    <th>Tiempo</th>
+    <th>{lbl_int(tiempo_aero_cerca)}min.</th>
+  </tr>
+  <tr>
+    <th>Indice Cabotaje</th>
+    <th>{lbl_int(indice_cabotaje_mas_cerca)}</th>
+  </tr>
+  <tr>
+    <th>Indice Internacional</th>
+    <th>{lbl_int(indice_int_mas_cerca)}</th>
+  </tr>
+</table>"
+  ))
+
+puna <- read_file_srv("/srv/DataDNMYE/capas_sig/puna_localidades_bahra.gpkg")
+
+
+puna_aeropuertos <- left_join(puna, puna_aeropuertos)
+
+puna_aeropuertos %>% 
+  filter(!st_is_empty(geom)) %>% 
+  mutate(geom = st_cast(geom, "POINT")) %>% 
+  leaflet() %>% 
+  addArgTiles() %>% 
+  addCircleMarkers(color = comunicacion::dnmye_colores("rosa"), label = ~ lapply(etiq, htmltools::HTML) , popup = ~ lapply(etiq, htmltools::HTML))
+
+```
 
 
 
