@@ -221,6 +221,10 @@ class: middle, inverse
 #### **Necesidad de una armonización nacional en un único instrumento**
 
 ---
+
+.center[<img src="graficos/sinta.png"/>]
+
+---
 <br>
 <br>
 
