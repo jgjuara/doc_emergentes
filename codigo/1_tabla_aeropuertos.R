@@ -7,7 +7,7 @@ library(sf)
 #                                                                              .
 #  Script de preprocesamiento de aeropuertos:                                  .
 #                                                                              .
-#    para cada aeropuerto toma el max mensual de vuelos y pax para 2019        .
+#    para cada aeropuerto toma el max mensual de vuelos y asientos para 2022        .
 #                                                                              .
 #    se le agregan las coordenadas de los aeropuertos                          .
 #                                                                              .
@@ -20,18 +20,19 @@ base_total <- herramientas::read_file_srv("aerocomercial/anac/base_anac_agrupada
 
 # calculo metricas x aeropuerto
 base_total <- base_total %>%
+  rename(anio = anio_local) %>% 
   pivot_longer(cols = c(origen_oaci, destino_oaci),
                names_to = "variable",
                values_to = "oaci") %>%
-  filter(oaci != "EGYP" & anio_local == 2019) %>%
-  group_by(oaci, mes_local) %>%
+  filter(oaci != "EGYP" & anio == anio_corte) %>%
+  group_by(anio, oaci, mes_local) %>%
   summarise(asientos = sum(asientos_pax, na.rm = T),
             sum_asientos_cabotaje = sum(asientos_pax[clasificacion_vuelo == "Cabotaje"]),
             sum_asientos_internacional = sum(asientos_pax[clasificacion_vuelo == "Internacional"]),
             frecuencias = sum(ceiling(vuelos), na.rm = T), 
             rutas_int = n_distinct(ruta_nombre[clasificacion_vuelo == "Internacional"]),
-            rutas_cabotaje = n_distinct(ruta_nombre[clasificacion_vuelo == "Cabotaje"]))%>%
-  group_by(oaci) %>% 
+            rutas_cabotaje = n_distinct(ruta_nombre[clasificacion_vuelo == "Cabotaje"]))%>% ungroup() %>% 
+  group_by(anio, oaci) %>% 
   summarise(max_asientos = max(asientos), # capacidad potencial
             max_frecuencias = max(frecuencias), # capacidad potencial
             media_asientos_cabotaje = mean(sum_asientos_cabotaje),
@@ -71,8 +72,8 @@ aeropuertos <- aeropuertos %>%
   filter(aeropuerto_etiqueta_anac %in%  lista_aeros)
 
 
-aeropuertos <- aeropuertos %>% 
-  select(-c(10:22, 25:30))
+# aeropuertos <- aeropuertos %>% 
+#   select(-c(10:22, 25:30))
 
 aeropuertos <- aeropuertos %>% 
   filter(aeropuerto_etiqueta_anac != 'Aeropuerto El Palomar')
