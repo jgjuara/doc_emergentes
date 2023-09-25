@@ -1,23 +1,52 @@
 library(tidyverse)
 library(tidygeocoder)
+library(herramientas)
+library(sf)
 
-cnrt <- read_file_srv("/srv/DataDNMYE/cnrt/backup/Pasajeros SR-2022.xlsx")
+readxl::excel_sheets("/srv/DataDNMYE/cnrt/backup/Pasajeros SR-2022.xlsx")
 
-cnrt %>% 
-  mutate(across(c(`Localidad Origen`, `Localidad Destino`), ~ tolower(.x))) %>% 
-  distinct(`Localidad Origen`, `Localidad Destino`)  %>% 
-  pivot_longer(cols = everything()) %>% distinct(value) %>% view
+cnrt_ene_mar <- map(1:3, ~ read_file_srv("/srv/DataDNMYE/cnrt/backup/Pasajeros SR-2022.xlsx",
+                                  sheet = .x,
+                                  col_types = c("text", "date", "date",
+                                                "text","text","text","text",
+                                                "text"))) %>% 
+  bind_rows() %>% 
+  janitor::clean_names()
+
+
+cnrt_abr_dic <- map(4:12, ~ read_file_srv("/srv/DataDNMYE/cnrt/backup/Pasajeros SR-2022.xlsx",
+                                         sheet = .x,
+                                         col_types = c("text", "date", "date","date",
+                                                       "text","text","text","text",
+                                                       "text"))) %>% 
+  bind_rows() %>% 
+  janitor::clean_names()
+
+
+cnrt <- bind_rows(
+  cnrt_ene_mar, cnrt_abr_dic
+)
+
+rm(list = c("cnrt_ene_mar", "cnrt_abr_dic"))
+
+# cnrt %>% 
+#   mutate(across(c(`Localidad Origen`, `Localidad Destino`), ~ tolower(.x))) %>% 
+#   distinct(`Localidad Origen`, `Localidad Destino`)  %>% 
+#   pivot_longer(cols = everything()) %>% distinct(value) %>% view
   
 # usar diccionario 
+
 cnrt <- cnrt %>% 
-  janitor::clean_names()
+  mutate(pax = as.numeric(ifelse(is.na(cantidad_pasajeros), cantidad_de_pasajeros, cantidad_pasajeros)))
+
+sum(cnrt$pax)
 
 cnrt <- cnrt %>% 
   mutate(across(c(localidad_origen, provincia_origen,
                   localidad_destino, provincia_destino),
                 tolower)) %>%
   group_by(localidad_origen, provincia_origen, localidad_destino, provincia_destino) %>% 
-  summarise(pax = sum(cantidad_de_pasajeros)) %>% ungroup() %>% 
+  summarise(pax = sum(pax)) %>% ungroup() %>% 
   mutate(across(c(localidad_origen, provincia_origen,
                   localidad_destino, provincia_destino),
                 ~ herramientas::limpiar_texto(.x, enie = F))) %>%
@@ -25,249 +54,236 @@ cnrt <- cnrt %>%
   summarise(pax = sum(pax)) %>% ungroup()
 
 
+####  control de autoridades -----------------
 
 cnrt <- cnrt %>% 
-  mutate(across(c(localidad_origen, localidad_destino), str_squish)) 
+  mutate(across(matches("localidad|provincia"), str_squish)) 
 
-cnrt <- cnrt %>% 
-  mutate(across(c(localidad_origen, localidad_destino),
-                function(x) {
-                  str_remove(x, "bs as|capital federal| sta sfe| sfe| lpa| cba| rgn| rn| mza| lp")
-                  })
-  )
-
-cnrt <- cnrt %>% 
-  mutate(across(.cols = contains(c("dest", "orig")), ~ str_to_lower(.)),
-         across(.cols = contains(c("dest", "orig")), ~ str_squish(.)),
-         across(.cols = contains(c("dest", "orig")), ~ str_trim(., side = "both"))) %>% 
-  mutate(localidad_destino = case_when(localidad_destino == "alta gracia" ~ "alta gracia",
-                                       localidad_destino == "junin"       ~ "junin",
-                                       localidad_destino == "jovita"      ~ "jovita",
-                                     localidad_destino == "mar de ajo"  ~ "mar de ajo",
-                                     localidad_destino == "ciudadela"   ~ "liniers",
-                                     localidad_destino == "pehuajo"     ~ "pehuajo",
-                                     localidad_destino == "virasoro"    ~ "virasoro",
-                                     str_detect(localidad_destino, "los toldos")    ~ "los toldos",
-                                     localidad_destino == "telen"       ~ "telen",
-                                     localidad_destino == "cuatia"       ~ "curuzu cuatia",
-                                     str_detect(localidad_destino, "camboriu") ~ "camboriu",
-                                     TRUE ~ localidad_destino) %>% 
-           str_replace(., " \\s*\\([^\\)]+\\)", ""),
-         localidad_origen = case_when(localidad_origen == "alta gracia" ~ "alta gracia",
-                                     localidad_origen == "junin"       ~ "junin",
-                                     localidad_origen == "jovita"      ~ "jovita",
-                                     localidad_origen == "mar de ajo"  ~ "mar de ajo",
-                                     localidad_origen == "ciudadela"   ~ "liniers",
-                                     localidad_origen == "pehuajo"     ~ "pehuajo",
-                                     localidad_origen == "virasoro"    ~ "virasoro",
-                                     str_detect(localidad_origen, "los toldos")    ~ "los toldos",
-                                     localidad_origen == "telen"       ~ "telen",
-                                     localidad_origen == "cuatia"       ~ "curuzu cuatia",
-                                     str_detect(localidad_origen, "camboriu") ~ "camboriu",
-                                     TRUE ~ localidad_origen) %>% 
-           str_replace(., " \\s*\\([^\\)]+\\)", ""))
-
-
-cnrt <- cnrt %>% 
-  mutate(across(.cols = c(localidad_destino,localidad_origen), 
-                ~ case_when(
-                  str_detect(., "terminal|term|tnal|agencia|parador") ~ str_trim(str_replace_all(string = ., 
-                                                                                                 pattern = "terminal|term|agencia|parador", 
-                                                                                                 replacement = ""),
-                                                                                 side = "both"), 
-                  TRUE ~ .)),
-         provincia_destino = case_when(provincia_destino == "salto" ~ "salta",
-                                       TRUE ~ provincia_destino))
-         # across(.cols = c(loc_dest_limpia, loc_orig_limpia), 
-         #        ~ remover_tildes(.)),
-
-cnrt <- cnrt %>% 
-  mutate(
-         across(.cols =  c(localidad_destino,localidad_origen), 
-                ~ case_when(str_detect(., "mar del plata|punta mogotes") ~ "mar del plata",
-                            str_detect(., "	zbuenos aires km35|nos aires|capital federal") & . != "resistencia" & . != "macia" & . != "florencio varela" & . != "san francisco" & . != "presidencia roque saenz peña" ~ "ciudad autonoma de buenos aires",
-                            str_detect(., "retiro|dellepiane|hotel savoy|pte saavedra|pte saavedra") ~ "ciudad autonoma de buenos aires",
-                            str_detect(., "rosario")       ~ "rosario",
-                            str_detect(., "zarate ciudad") ~ "zarate",
-                            str_detect(., "jujuy")         ~ "san salvador de jujuy",
-                            str_detect(., "la plata")      ~ "la plata",
-                            str_detect(., "salta|j v gonzalez")         ~ "salta",
-                            str_detect(., "asuncion")      ~ "asuncion",
-                            str_detect(., "curuzucuatia")  ~ "curuzu cuatia",
-                            str_detect(., "federal sjo")   ~ "federal",
-                            str_detect(., "frias")         ~ "frias",
-                            str_detect(., "ciudadela")     ~ "ciudadela",
-                            str_detect(., "gonz. chaves")  ~ "gonzales chaves",
-                            str_detect(., "posadas")       ~ "posadas",
-                            str_detect(., "prince varela") ~ "berazategui",
-                            str_detect(., "pergano")       ~ "pergamino",
-                            str_detect(., "vergara y gaona") ~ "villa tesei",
-                            str_detect(., "rio ceballos cba") ~ "rio ceballos",
-                            str_detect(., "santo tom")     ~ "santo tome",
-                            str_detect(., "moron nueva")   ~ "moron",
-                            str_detect(., "saujil")        ~ "saujil",
-                            str_detect(., "bde irigoyen")  ~ "bernardo de irigoyen",
-                            str_detect(., "ldor. general  s. martin") ~ "libertador general san martin",
-                            str_detect(., "del libertador|villa libertador") ~ "gualeguaychu",
-                            str_detect(., "general  san martin lp") ~ "general san martin",
-                            str_detect(., "moreno las piedras") ~ "las piedras",
-                            str_detect(., "corrientes san jose") ~ "san jose",
-                            str_detect(., "moreno dover") ~ "moreno",
-                            str_detect(., "s. miguel de tucuman") ~ "san miguel de tucuman",
-                            str_detect(., "san miguel rotonda bue") ~ "san miguel",
-                            str_detect(., "sjusto centro ag serena|san justo rotonda bs as|m. san justo|. san justo|la parada de cdn") ~ "san justo",
-                            str_detect(., "bariloche")     ~ "san carlos de bariloche",
-                            str_detect(., "santiago del eso|sgo del eso|sgo del estero") ~ "santiago del estero",
-                            str_detect(., "america rivadavia")    ~ "america",
-                            str_detect(., "b. blanca")            ~ "bahia blanca",
-                            str_detect(., "c del este")           ~ "ciudad del este",
-                            str_detect(., "c. brochero|cura brochero cba.") ~ "villa cura brochero",
-                            str_detect(., "cdro|c. riv|comodoro|com. rivadavia") ~ "comodoro rivadavia",
-                            str_detect(., "^com. rivadav\\.\\(ch\\)$") ~ "comodoro rivadavia",
-                            str_detect(., "^rivadav.(ch)$") ~ "comodoro rivadavia",
-                            str_detect(., "vc paz|carlos paz")         ~ "villa carlos paz",
-                            str_detect(., "morteros")       ~ "morteros",
-                            str_detect(., "e//squel")       ~ "esquel",
-                            str_detect(., "jose c. paz desconectur") ~ "jose c. paz",
-                            str_detect(., "tuyu")           ~ "mar del tuyu",
-                            str_detect(., "pampa de los huanacos|p.de los guanacos") ~ "pampa de los guanacos",
-                            str_detect(., "avellaneda")     ~ "avellaneda",
-                            str_detect(., "laboulaye cba")  ~ "laboulaye",
-                            str_detect(., "lnalem")         ~ "leandro n. alem",
-                            str_detect(., "r hondo")        ~ "rio hondo",
-                            str_detect(., "na clavero")     ~ "mina clavero",
-                            str_detect(., "bermejo")        ~ "bermejo",
-                            str_detect(., "clorinda")       ~ "clorinda",
-                            str_detect(., "ibicuy")         ~ "ibicuy",
-                            str_detect(., "punta mogotes|pta. mogotes")  ~ "punta mogotes",
-                            str_detect(., "quili")          ~ "quimili",
-                            str_detect(., "quilmes cal/12 oct") ~ "quilmes",
-                            str_detect(., "burzaco")        ~ "burzaco",
-                            str_detect(., "abra ventana")   ~ "valle abra de la ventana",
-                            str_detect(., "cap del monte|cap. del monte|cap monte|cap del monte|cap.del monte|cap. monte")  ~ "capilla del monte",
-                            str_detect(., "ros de la frona")~ "rosario de la frontera",
-                            str_detect(., "chapadmalal")    ~ "chapadmalal",
-                            str_detect(., "claromeco")      ~ "claromeco",
-                            str_detect(., "cap sarmiento")  ~ "capitan sarmiento",
-                            str_detect(., "colivia")        ~ "caleta olivia",
-                            str_detect(., "colon")          ~ "colon",
-                            str_detect(., "moron")          ~ "moron",
-                            str_detect(., "tnal. merlo")    ~ "merlo",
-                            str_detect(., "me ndoza|m//e ndoza")       ~ "mendoza",
-                            str_detect(., "villa elisa")    ~ "villa elisa",
-                            str_detect(., "bell ville tnal.") ~ "bell ville",
-                            str_detect(., "villa traful")   ~ "villa traful",
-                            str_detect(., "sta. esita")     ~ "santa teresita",
-                            str_detect(., "snandes")        ~ "san martin de los andes",
-                            str_detect(., "s.m.del monte")     ~ "san miguel del monte",
-                            str_detect(., "sta.clara del mar") ~ "santa clara del mar",
-                            str_detect(., "virasoro") ~ "virasoro",
-                            str_detect(., "santa rosa") ~ "santa rosa",
-                            str_detect(., "r.s. |r.s.|rs |saenz pena") & . != "santa rosa" & . != "virasoro" & . != "tres isletas" & . != "resistencia" & . != "crespo" & . != "tres arroyos" ~ "roque saenz peña",
-                            str_detect(., "sta cruz de la sierra") ~ "santa cruz de la cierra",
-                            str_detect(., "san guel|s.m. de tucuman|s.m. tucuman|smtucuman") ~ "san miguel de tucuman",
-                            str_detect(., "s mazza|salvador mazza")         ~ "salvador mazza",
-                            str_detect(., "sauce")         ~ "sauce viejo",
-                            str_detect(., "gral.pico")         ~ "general pico",
-                            str_detect(., "pozo h")         ~ "pozo hondo",
-                            str_detect(., "san ignacio arg")         ~ "san ignacio",
-                            str_detect(., "san pedro(mnes)|san pedro (mi)")         ~ "san pedro",
-                            str_detect(., "^san pedro\\(mnes\\)$")         ~ "san pedro",
-                            str_detect(., "san fdo del valle de catamarca|sfv catamarca|sfv. catamarca") ~ "san fernando del valle de catamarca",
-                            str_detect(., "p truncado")                   ~ "pico truncado",
-                            str_detect(., "Valle fértil|valle fertil")                 ~ "villa san agustin",
-                            str_detect(., "p san nicolas parador|t san nicolas") ~ "san nicolas de los arroyos",
-                            str_detect(., "cordoba capital|cbapta|tecordoba|cordoba cdad.")       ~ "cordoba",
-                            str_detect(., "cruce de lomas")               ~ "lomas de zamora",
-                            str_detect(., "varela") ~ "florencio varela", # cruce de varela|cruce varela|varela 1|varela 4|varela 8|varela vosa|f. varela|varela teminal|
-                            str_detect(., "parana1")                      ~ "parana",
-                            str_detect(., "trenque lauqen")               ~ "trenque lauquen",
-                            str_detect(., "montecaseros")                 ~ "monte caseros",
-                            str_detect(., "obera centro")                 ~ "obera",
-                            str_detect(., "castelar")                 ~ "castelar",
-                            str_detect(., "arapey uru")             ~ "arapey",
-                            str_detect(., "resistencia")            ~ "resistencia",
-                            str_detect(., "general viamonte")             ~ "los toldos",
-                            str_detect(., "jj castelli|	j j castelli|j j castelli")    ~ "juan jose castelli",
-                            str_detect(., "j.b.alberdi|j.b. alberdi|j. b. alberdi|j b alberdi")     ~ "juan bautista alberdi",
-                            str_detect(., "pto.montt ch") ~ "puerto montt",
-                            str_detect(., "pte ignacio loyola") ~ "clorinda",
-                            str_detect(., "noria|pt. nra.|pte de la nor") ~ "ingeniero budge",
-                            str_detect(., "rafaela nex|rafaela acc") ~ "rafaela",
-                            #str_detect(., "santa esita") ~ "santa evita",
-                            str_detect(., "v// maria|v maria") ~ "villa maria",
-                            str_detect(., "pto.iguazu|pto iguazu|ptoiguaz|iguazu") ~ "puerto iguazu",
-                            str_detect(., "m ")      ~ str_replace(., "m ", ""),
-                            #str_detect(., " mis| mi") ~ str_replace(., " mis|mi", ""),
-                            str_detect(., "gral. |gral ") ~ str_replace(., "gral.|gral", "general "),
-                            str_detect(., "cnel. |cnel ") ~ str_replace(., "cnel.|cnel", "coronel "),
-                            str_detect(., "ing. |ing ") ~ str_replace(., "ing. |ing ", "ingeniero "),
-                            TRUE ~ .)),
-         provincia_destino = case_when(provincia_destino == "ciudad autonoma de buenos aires" & localidad_destino == "ingeniero budge" ~ "buenos aires",
-                                       TRUE ~ provincia_destino),
-         provincia_origen  = case_when(provincia_origen  == "ciudad autonoma de buenos aires" & localidad_origen == "ingeniero budge" ~ "buenos aires",
-                                       TRUE ~ provincia_origen),
-         terminal_origen = localidad_origen,
-         terminal_destino = localidad_destino,
-         #across(.cols = contains(c("dest", "orig")), ~ str_to_title(.)),
-         #par_origen_destino_ordenado = paste0(loc_dest_limpia, " - ", loc_orig_limpia),
-         # par_origen_destino_aordenado = case_when(loc_orig_limpia < loc_dest_limpia ~ paste0(loc_orig_limpia,"-", loc_dest_limpia),
-         #                                          TRUE             ~ paste0(loc_dest_limpia,"-",loc_orig_limpia)),
-         # fecha_actualizacion = case_when(fecha_actualizacion == "\\N" ~ NA_character_,
-         #                                 TRUE ~ fecha_actualizacion),
-         # fecha_actualizacion = as.POSIXct(excel_numeric_to_date(as.numeric(fecha_actualizacion))),
-         across(.cols = c(localidad_destino, localidad_origen),
-                ~ case_when(str_detect(., "santiago") ~ "santiago del estero",
-                            str_detect(., "tucuman") ~ "san miguel de tucuman",
-                            str_detect(., "liniers") ~ "ciudad autonoma de buenos aires",
-                            T ~ .)))
-
-cnrt <- cnrt %>% 
-  mutate(localidad_origen = str_remove(localidad_origen, "acc|acceso|pmadryn"),
-         localidad_destino = str_remove(localidad_destino, "acc|acceso|pmadryn"))
-
-
-cnrt <- cnrt %>% 
-  filter(localidad_destino != "n" &
-           localidad_origen != "n" &
-           ! provincia_origen %in% c("alto parana", "asuncion", "caaguazu",
-                                        "central", "cordillera", "guaira",
-                                        "itapua", "n", "paraguari",
-                                        "rio grande do sul", "santa catarina") &
-          ! provincia_destino %in% c("alto parana", "asuncion", "caaguazu",
-                                   "central", "cordillera", "guaira",
-                                   "itapua", "n", "paraguari",
-                                   "rio grande do sul", "santa catarina"))
-
-
-
-cnrt <- cnrt %>%  
-  group_by(localidad_origen, provincia_origen, localidad_destino, provincia_destino) %>% 
+cnrt <- bind_rows(
+  cnrt %>% 
+    group_by(prov = provincia_destino, loc = localidad_destino) %>% 
+    summarise(pax = sum(pax)),
+  cnrt %>% 
+    group_by(prov = provincia_origen, loc =localidad_origen) %>% 
+    summarise(pax = sum(pax))
+  ) %>%
+  group_by(prov, loc) %>% 
   summarise(pax = sum(pax)) %>% 
-  ungroup()
-
-dict_cnrt <- bind_rows(
-  cnrt %>% 
-  distinct(provincia_destino, localidad_destino) %>% 
-    rename(prov = provincia_destino, localidad  = localidad_destino),
-  cnrt %>% 
-    distinct(provincia_origen, localidad_origen) %>% 
-    rename(prov = provincia_origen, localidad  = localidad_origen)
-  )
+  ungroup() %>% 
+  arrange(desc(pax)) %>% 
+  mutate(pax_acum = 100*cumsum(pax)/sum(pax))
 
 
+cnrt <- cnrt %>% 
+  filter(loc != "n" &
+           ! prov %in% c("alto parana", "asuncion", "caaguazu",
+                         "central", "cordillera", "guaira",
+                         "itapua", "n", "paraguari",
+                         "rio grande do sul", "santa catarina"))
 
-dict_cnrt %>% pull(prov) %>% unique()
+cnrt <- cnrt %>% 
+  mutate(prov = case_when(
+    str_detect(loc, "ciudad autonoma|retiro|liniers|dellepiane") ~ "ciudad autonoma de buenos aires",
+    T ~ prov
+  ))
 
-dict_cnrt_osm <- dict_cnrt %>%
-  mutate(direccion  = paste(localidad, prov, sep = ", ")) %>% 
+cnrt <- cnrt %>% 
+  mutate(loc  = str_remove(loc, "bs as$| capital federal$| bue | bue$|bue |
+                                 tuc$| sju$| slu|ctesaxion|
+                                 sta fe$| sfe$| mis$|
+                                 lpa$| cba$| rng$| rn$|mza |
+                                 mza$| lpa$| lpm$| mzalpampa|rotonda|
+                                 ctes$| cor$| sgo$| eri$| erios$| er$|001"))
+
+
+cnrt <- cnrt %>% 
+  mutate(across(.cols = matches("loc|prov"), ~ str_squish(.))
+  ) %>% 
+  mutate(loc = str_remove(loc,
+                                             " acc$|acc |acceso") %>% 
+                str_replace(., "pto ", "puerto ") %>% 
+          str_replace(., " acc$|acc | acc |acceso", " ") %>% 
+           str_replace(., "cdro", "comodoro") %>% 
+           str_remove(., "pdor|parador") %>% 
+           str_replace(., "term |terminal|teminal| tnal$", " ") %>% 
+           str_replace(., "gral | gral$", " general ") %>% 
+           str_remove(., " dover|gnc puma| ch$") %>% 
+           str_replace(., "mza | mza$", " ") %>% 
+           str_replace(., " lri$| lrj$", " ") %>% 
+           str_replace(., " cat$", " ") %>% 
+           str_replace(., " tuc$", " ") %>% 
+           str_replace(., " cha$", " ") 
+           ) %>% 
+  mutate(across(.cols = matches("loc|prov"), ~ str_squish(.))) %>% 
+  mutate(loc_clean = case_when(
+    str_detect(loc, "colivia") & prov == "santa cruz" ~ "caleta olivia",
+    str_detect(loc, "moreno las piedras") & prov == "buenos aires" ~ "moreno",
+    str_detect(loc, "vergara") & prov == "buenos aires" ~ "moron",
+    str_detect(loc, "cap sarmiento") & prov == "buenos aires" ~ "capitan sarmiento",
+    str_detect(loc, "guemes") & prov == "salta" ~ "general guemes",
+    str_detect(loc, "libertador") & prov == "entre rios" ~ "libertador san martin",
+    str_detect(loc, "ocampo") & prov == "santa fe" ~ "villa ocampo",
+    str_detect(loc, "merlo") & prov == "san luis" ~ "merlo",
+    str_detect(loc, "combinacion") & prov == "san luis" ~ "san luis",
+    str_detect(loc, "mercedes") & prov == "san luis" ~ "villa mercedes",
+    str_detect(loc, "conlara") & prov == "san luis" ~ "santa rosa del conlara",
+    str_detect(loc, "trunca") & prov == "santa cruz" ~ "pico truncado",
+    str_detect(loc, "piedra") & prov == "santa cruz" ~ "luis piedra buena",
+    str_detect(loc, "mdp") & prov == "buenos aires" ~ "mar del plata",
+    str_detect(loc, "santa fe") & prov == "santa fe" ~ "cordoba",
+    str_detect(loc, "corrientes") & prov == "corrientes" ~ "corrientes",
+    str_detect(loc, "bariloche") ~ "san carlos de bariloche",
+    str_detect(loc, "cordoba") ~ "cordoba",
+    str_detect(loc, "moron") ~ "moron",
+    str_detect(loc, "resistenciat") ~ "resistencia",
+    str_detect(loc, "197|talar pch|talar") ~ "el talar",
+    str_detect(loc, "eldorado") ~ "el dorado",
+    str_detect(loc, "montecaseros") ~ "monte caseros",
+    str_detect(loc, "santo tom") ~ "santo tome",
+    str_detect(loc, "catamarca") & prov  == "catamarca" ~ "san fernando del valle de catamarca",
+    str_detect(loc, "ptoiguaz") ~ str_replace(loc, "ptoiguaz", "puerto iguazu"),
+    str_detect(loc, "cdro|c riv|comodoro|com rivadavia|rivada") & 
+      prov == "chubut" ~ "comodoro rivadavia",
+    str_detect(loc, "castelli") & prov == "chaco" ~ "juan jose castelli",
+    str_detect(loc, "pico") & prov == "la pampa" ~ "general pico",
+    str_detect(loc, "25 de mayo") & prov == "la pampa" ~ "colonia 25 de mayo",
+    str_detect(loc, "tucuman|tucumn") & prov == "tucuman" ~ "san miguel de tucuman",
+    str_detect(loc, "termas") & prov == "santiago del estero" ~ "termas de rio hondo",
+    str_detect(loc, "ovanta") & prov == "catamarca" ~ "bañado de ovanta",
+    str_detect(loc, "retiro") ~ "retiro",
+    str_detect(loc, "liniers") ~ "liniers",
+    str_detect(loc, "dellepiane") ~ "dellepiane",
+    str_detect(loc, "vc paz") ~ "villa carlos paz",
+    str_detect(loc, "mar d tuyu") ~ "mar de tuyu",
+    str_detect(loc, "sta ") ~ str_replace(loc, "sta ", "santa "),
+    str_detect(loc, "la parada de cdn") ~ str_replace(loc, "la parada de cdn", "san justo"),
+    str_detect(loc, "j v gonzalez") ~ str_replace(loc, "j v gonzalez", "joaquin v gonzalez"),
+    str_detect(loc, "jujuy") & prov == "jujuy" ~ "san salvador de jujuy",
+    str_detect(loc, "estero|santiago") & prov == "santiago del estero" ~ "santiago del estero",
+    str_detect(loc, "rosario") & prov == "santa fe"       ~ "rosario",
+    T ~ loc
+  )) %>% 
+  mutate(across(.cols = matches("loc|prov"), ~ str_squish(.))
+  ) %>% 
+  group_by(prov, loc_clean) %>%
+  summarise(pax = sum(pax)) %>%
+  ungroup() %>%
+  arrange(desc(pax)) %>%
+  mutate(pax_acum = 100*cumsum(pax)/sum(pax)) %>%
+  ungroup() 
+
+
+cnrt %>% 
+  write_rds("entradas/cnrt_lista_limpia.rds")
+
+cnrt %>% 
+  mutate(prop = pax/sum(pax)) %>% 
+  filter(pax > 365) %>%
+  nrow()
+
+dict_cnrt_osm <- cnrt %>%
+  mutate(direccion  = paste(loc_clean, prov, sep = ", ")) %>% 
   tidygeocoder::geocode(address = direccion,
                         custom_query = list("accept_language" = "es",
                                            "countrycodes" = "AR"), 
                         full_results = TRUE)
+dict_cnrt_osm %>% 
+  write_rds("/srv/DataDNMYE/capas_sig/dict_cnrt_osm.rds")
 
-test2 <- dict_cnrt %>%
-  mutate(direccion  = paste(localidad, prov, sep = ", ")) %>% 
-  tidygeocoder::geocode(address = direccion, method  = "google",
-                        custom_query = list("components" = "country:AR"), 
-                        full_results = TRUE)
+sum(is.na(dict_cnrt_osm$place_id[dict_cnrt_osm$pax >365]))/nrow(dict_cnrt_osm[dict_cnrt_osm$pax >365,])
+
+# dict_cnrt_osm %>% 
+#   filter(!is.na(lat)) %>% 
+#   st_as_sf(coords  = c("long", "lat"), crs  = 4326) %>% 
+#   mapview::mapview()
+# 
+# dict_cnrt_osm %>% 
+#   filter(is.na(lat)) %>% view
+
+# dict_cnrt_google <- cnrt %>%
+#   filter(pax > 365) %>% 
+#   mutate(direccion  = paste(loc_clean, prov, sep = ", ")) %>% 
+#   tidygeocoder::geocode(address = direccion, method  = "google",
+#                         custom_query = list("components" = "country:AR"), 
+#                         full_results = TRUE)
+
+# dict_cnrt_google %>% 
+#   write_rds("/srv/DataDNMYE/capas_sig/dict_cnrt_google.rds")
+# 
+# dict_cnrt_google %>% 
+#   # filter(! is.na(lat) & !  is.na(long)) %>%
+#   # sf::st_as_sf(coords = c( "long", "lat"), crs = 4326) %>% 
+#   mapview::mapview()
+# 
+# dict_cnrt_google <- dict_cnrt_google %>% 
+#   filter(! is.na(lat) & !  is.na(long)) %>% 
+#   sf::st_as_sf(coords = c( "long", "lat"), crs = 4326)
+
+puna <- read_file_srv("/srv/DataDNMYE/capas_sig/puna_localidades_bahra_2022.gpkg")
+
+puna_faja4 <- st_transform(puna %>%
+                             filter(!st_is_empty(geom)), crs = 5346)
+
+dict_cnrt_faja4 <- st_transform(dict_cnrt_osm %>% 
+                                  filter(!is.na(lat)) %>% 
+                                  st_as_sf(coords= c("long", "lat"),
+                                           crs = 4326),
+                                crs = 5346)
+
+# promedio de distancias entre puntos puna
+dm <- st_distance(puna_faja4, puna_faja4)
+
+dm <- dm %>% units::drop_units()
+
+j <- list()
+
+for (i in 1:nrow(dm)) {
+  j[i] <- min(dm[i,1:nrow(dm)][-i], na.rm = T)
+}
+
+j %>% unlist() %>% median()/1000 # mediana de distancias mínimas en km
+sum(dm) / (nrow(dm) * (nrow(dm) - 1) / 2)/1000 # Calcular el promedio de distancias en km
+
+
+puna_cnrt <- st_join(puna_faja4, dict_cnrt_faja4,
+                     join  = st_is_within_distance, left = T, dist = 15000)
+
+puna_cnrt <- left_join(puna_cnrt, dict_cnrt_faja4 %>% 
+            select(direccion, geometry) %>% 
+              as_tibble(.))
+
+puna_cnrt <- puna_cnrt %>% 
+  mutate(dist  = map2(geom, geometry, .f = ~ st_distance(.x,.y)))
+
+# puna_cnrt %>% 
+#   st_drop_geometry() %>% 
+#   select(provincia, departamento_partido, localidad,
+#          direccion, plazas, pax, dist) %>% 
+#   group_by(provincia, departamento_partido, localidad,
+#            plazas) %>% 
+#   summarise(pax = sum(pax, na.rm = T)) %>% 
+#   filter(pax == 0) %>% 
+#   view()
+# 
+# puna_cnrt %>% 
+#   st_drop_geometry() %>% 
+#   select(provincia, departamento_partido, localidad,
+#          direccion, plazas, pax) %>% 
+#   group_by(provincia, departamento_partido, localidad,
+#            plazas) %>% 
+#   summarise(pax = sum(pax, na.rm = T)) %>% 
+#   view()
+
+puna_cnrt <- puna_cnrt %>% 
+  st_drop_geometry() %>% 
+  select(provincia, departamento_partido, localidad,
+         direccion, plazas, pax) %>% 
+  group_by(provincia, departamento_partido, localidad,
+           plazas) %>% 
+  summarise(pax_cnrt = sum(pax, na.rm = T)) %>% 
+  ungroup()
+
+puna_cnrt %>% 
+  write_rds("salidas/puna_cnrt.rds")
+
+
